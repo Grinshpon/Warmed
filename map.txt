@@ -1,0 +1,10 @@
+How should the map info be laid out?
+
+idea 1: layers:
+  - background layer, (grass and dirt)
+  - terrain layer layer (path blocking), (water, rocks, cliffs?)
+  - entity layer (path blocking), (trees, mines, buildings)
+  - unit layer?, (moving units)
+
+
+Also: Need a map editor and a way to read it
