@@ -7,12 +7,32 @@ love.graphics.setNewFont(--[["Font/uni05_53.ttf",--]]25);
 
 util = require "util"
 
+local file
+
 local tileset
 local quad
 local selected = 1
 
-local Map
 
+local Camera
+function offsetx(x)
+  return x-Camera.x
+end
+function offsety(y)
+  return y-Camera.y
+end
+function coffsetx(x)
+  return x+Camera.x
+end
+function coffsety(y)
+  return y+Camera.y
+end
+function translate(x,y)
+  Camera.x = Camera.x - x
+  Camera.y = Camera.y - y
+end
+
+local Map
 function show(self)
   function tab(x)
     if not x then return "  "
@@ -49,45 +69,57 @@ function show(self)
   return res
 end
 
---[[
-  for i in ipairs(self.data) do
-    res = res..tab..tab.."{ "
-    for j in ipairs(self.data[i]) do
-      res = res.."{"
-      for k in ipairs(self.data[i][j]) do
-        res = res..tostring(self.data[i][j][k])..","
-      end
-      res = res.."}, "
-    end
-    res = res.." },\n"
-  end
---]]
-
 function file_exists(name)
  local f=io.open(name,"r")
  if f~=nil then io.close(f) return true else return false end
 end
 
-selectCase = {
-  ['1'] = function() selected = 1 end,
-  ['2'] = function() selected = 2 end,
-  ['3'] = function() selected = 3 end,
-  ['4'] = function() selected = 4 end,
+
+local keysDown
+local selectCase = {
+  ['1']     = function() selected = 1 end,
+  ['2']     = function() selected = 2 end,
+  ['3']     = function() selected = 3 end,
+  ['4']     = function() selected = 4 end,
+  ['up']    = function() if not keysDown.up    then keysDown.up = true;    end end,
+  ['down']  = function() if not keysDown.down  then keysDown.down = true;  end end,
+  ['left']  = function() if not keysDown.left  then keysDown.left = true;  end end,
+  ['right'] = function() if not keysDown.right then keysDown.right = true; end end,
   default = function() end
 }
+
+local releaseCase = {
+  ['up']    = function() if keysDown.up    then keysDown.up = false;    end end,
+  ['down']  = function() if keysDown.down  then keysDown.down = false;  end end,
+  ['left']  = function() if keysDown.left  then keysDown.left = false;  end end,
+  ['right'] = function() if keysDown.right then keysDown.right = false; end end,
+  default = function() end
+}
+
 function love.keypressed(key)
   util.match({key}, selectCase)()
 end
 
+function love.keyreleased(key)
+  util.match({key}, releaseCase)()
+end
+
 function love.load(arg)
-  --temp
+  --[[
   for i in ipairs(arg) do
     print(tostring(i)..": "..arg[1])
   end
+--]]
 
-  local file
+  keysDown = {
+    up = false,
+    down = false,
+    left = false,
+    right = false
+  }
+
   if arg[1] then
-    if file_exists(arg[1]..".lua") then
+    if file_exists("maps/"..arg[1]..".lua") then
       Map = require(arg[1])
     else
       Map = {
@@ -101,7 +133,7 @@ function love.load(arg)
         height = 0,
       }
     end
-    file = io.open(arg[1]..".lua", "w")
+    file = io.open("maps/"..arg[1]..".lua", "w")
   else
     Map = {
       name = "untitled",
@@ -113,11 +145,10 @@ function love.load(arg)
       width = 0,
       height = 0,
     }
-    file = io.open("untitled.lua", "w")
+    file = io.open("maps/untitled.lua", "w")
   end
-  io.output(file)
-  io.write(show(Map))
-  io.close(file)
+
+  Camera = {x = 0, y = 0 --[[, scale = 1.0--]]}
 
   tileset = love.graphics.newImage("Tiles/basic_tiles.png")
   quad = {
@@ -128,23 +159,41 @@ function love.load(arg)
   }
 end
 
+local transCase = {
+  ['up']    = function() translate(0,-1) end,
+  ['down']  = function() translate(0,1)  end,
+  ['left']  = function() translate(-1,0) end,
+  ['right'] = function() translate(1,0)  end,
+  default = function() end
+}
+
 function love.update(dt)
+  for k,v in pairs(keysDown) do
+    if v then util.match({k}, transCase)() end
+  end
 end
 
 function love.draw()
   -- temp
-  love.graphics.draw(tileset, quad[1], 0,0,   0, 10,10)
-  love.graphics.draw(tileset, quad[2], 0,80,  0, 10,10)
-  love.graphics.draw(tileset, quad[3], 80,0,  0, 10,10)
-  love.graphics.draw(tileset, quad[4], 80,80, 0, 10,10)
+  --love.graphics.draw(tileset, quad[1], 0,0,   0, 10,10)
+  --love.graphics.draw(tileset, quad[2], 0,80,  0, 10,10)
+  --love.graphics.draw(tileset, quad[3], 80,0,  0, 10,10)
+  love.graphics.draw(tileset, quad[4], coffsetx(80),coffsety(80), 0, 10,10)
   --
   love.graphics.rectangle("fill", 0, 1820, 100,100)
   love.graphics.draw(tileset, quad[selected], 10, 1830, 0, 10,10)
   local x,y = love.mouse.getPosition()
+  x,y = offsetx(x), offsety(y)
   local mx,my = math.floor(x/10), math.floor(y/10)
   -- multiple selection rectangle: love.graphics.rectangle("line", l,w, mousex, mousey)
   love.graphics.setLineWidth(3)
-  love.graphics.rectangle("line", 80*(math.floor(x/80)),80*(math.floor(y/80)), 80,80)
+  love.graphics.rectangle("line", coffsetx(80*(math.floor(x/80))),coffsety(80*(math.floor(y/80))), 80,80)
   love.graphics.print("("..tostring(mx)..", "..tostring(my)..")", 110, 1830)
   love.graphics.print("background:  [1]  [2]  [3]  [4]    terrain:  [q]  [w]  [e]  [r]    entities:  [a]  [s]  [d]  [f]", 110, 1875)
+end
+
+function love.quit()
+  io.output(file)
+  io.write(show(Map))
+  io.close(file)
 end
