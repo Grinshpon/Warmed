@@ -104,6 +104,20 @@ function love.keyreleased(key)
   util.match({key}, releaseCase)()
 end
 
+function defaultMap(n)
+  local dM = {
+    name = n,
+    data = {
+      background = {{}},
+      terrain = {{}},
+      entities = {{}},
+    },
+    width = 0,
+    height = 0,
+  }
+  return dM
+end
+
 function love.load(arg)
   --[[
   for i in ipairs(arg) do
@@ -121,30 +135,15 @@ function love.load(arg)
   if arg[1] then
     if file_exists("maps/"..arg[1]..".lua") then
       Map = require("maps/"..arg[1])
+      if type(Map) ~= "table" then
+        Map = defaultMap(arg[1])
+      end
     else
-      Map = {
-        name = arg[1],
-        data = {
-          background = {{}},
-          terrain = {{}},
-          entities = {{}},
-        },
-        width = 0,
-        height = 0,
-      }
+      Map = defaultMap(arg[1])
     end
     file = io.open("maps/"..arg[1]..".lua", "w")
   else
-    Map = {
-      name = "untitled",
-      data = { -- for testing, replace with empty/defaults
-        background = {{}},
-        terrain = {{}},
-        entities = {{}},
-      },
-      width = 0,
-      height = 0,
-    }
+    Map = defaultMap("untitled")
     file = io.open("maps/untitled.lua", "w")
   end
 
@@ -195,7 +194,7 @@ function love.mousepressed(x,y,button, _istouch)
   if button == 1 and x >= 0 and y >= 0 then
     x = math.floor(offsetx(x)/80)+1
     y = math.floor(offsety(y)/80)+1
-    print(x,y)
+    --print(x,y)
     local layer = util.match({selected}, placeCase)
     if not layer[y] then
       layer[y] = {}
@@ -212,8 +211,17 @@ function love.draw()
   --love.graphics.draw(tileset, quad[1], 0,0,   0, 10,10)
   --love.graphics.draw(tileset, quad[2], 0,80,  0, 10,10)
   --love.graphics.draw(tileset, quad[3], 80,0,  0, 10,10)
-  love.graphics.draw(tileset, quad[4], coffsetx(80),coffsety(80), 0, 10,10)
+  --love.graphics.draw(tileset, quad[4], coffsetx(80),coffsety(80), 0, 10,10)
   --
+
+  for by in pairs(Map.data.background) do
+    for bx in pairs(Map.data.background[by]) do
+      if Map.data.background[by][bx] ~= 0 then
+        love.graphics.draw(tileset, quad[Map.data.background[by][bx]], coffsetx((bx-1)*80), coffsety((by-1)*80), 0, 10,10)
+      end
+    end
+  end
+
   love.graphics.rectangle("fill", 0, 1820, 100,100)
   love.graphics.draw(tileset, quad[selected], 10, 1830, 0, 10,10)
   local x,y = love.mouse.getPosition()

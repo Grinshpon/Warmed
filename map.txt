@@ -5,6 +5,5 @@ idea 1: layers:
   - terrain layer layer (path blocking), (water, rocks, cliffs?)
   - entity layer (path blocking), (trees, mines, buildings)
   - unit layer?, (moving units)
-
-
-Also: Need a map editor and a way to read it
+  if background tile is not nil or >0 it is walkable
+  if terrain or entity tile is nil or 0 it is walkable
