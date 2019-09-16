@@ -13,6 +13,7 @@ local tileset
 local quad
 local selected = 1
 local placeCase
+local dragging
 
 local Camera
 function offsetx(x)
@@ -30,6 +31,11 @@ end
 function translate(x,y)
   Camera.x = Camera.x - x
   Camera.y = Camera.y - y
+end
+
+local messages = {}
+function display(msg, dur)
+  table.insert(messages, {message = msg, duration = dur})
 end
 
 local Map
@@ -124,6 +130,7 @@ function love.load(arg)
     print(tostring(i)..": "..arg[1])
   end
 --]]
+  dragging = {x=0,y=0,s=false}
 
   keysDown = {
     up = false,
@@ -176,10 +183,10 @@ function love.load(arg)
 end
 
 local transCase = {
-  ['up']    = function() translate(0,-5) end,
-  ['down']  = function() translate(0,5)  end,
-  ['left']  = function() translate(-5,0) end,
-  ['right'] = function() translate(5,0)  end,
+  ['up']    = function() translate(0,-20) end,
+  ['down']  = function() translate(0,20)  end,
+  ['left']  = function() translate(-20,0) end,
+  ['right'] = function() translate(20,0)  end,
   default = function() end
 }
 
@@ -187,14 +194,22 @@ function love.update(dt)
   for k,v in pairs(keysDown) do
     if v then util.match({k}, transCase)() end
   end
+  for i=#messages,1,-1 do
+    messages[i].duration = messages[i].duration - dt
+    if messages[i].duration <= 0 then
+      table.remove(messages,i)
+    end
+  end
 end
 
 
-function love.mousepressed(x,y,button, _istouch)
+function love.mousepressed(mx,my,button)
+  local x = offsetx(mx)/80
+  local y = offsety(my)/80
+  --print(x,y)
   if button == 1 and x >= 0 and y >= 0 then
-    x = math.floor(offsetx(x)/80)+1
-    y = math.floor(offsety(y)/80)+1
-    --print(x,y)
+    x = math.floor(x)+1
+    y = math.floor(y)+1
     local layer = util.match({selected}, placeCase)
     if not layer[y] then
       layer[y] = {}
@@ -203,16 +218,33 @@ function love.mousepressed(x,y,button, _istouch)
       end
     end
     layer[y][x] = selected
+  elseif button == 2 then
+    dragging.x = mx
+    dragging.y = my
+    dragging.s = true
+  elseif button == 1 then
+    display("Out of bounds, cannot place tile when x < 0 or y < 0", 3)
+  end
+end
+
+function love.mousereleased(x,y, button)
+  if button == 2 then
+    dragging.s = false
   end
 end
 
 function love.draw()
-  -- temp
-  --love.graphics.draw(tileset, quad[1], 0,0,   0, 10,10)
-  --love.graphics.draw(tileset, quad[2], 0,80,  0, 10,10)
-  --love.graphics.draw(tileset, quad[3], 80,0,  0, 10,10)
-  --love.graphics.draw(tileset, quad[4], coffsetx(80),coffsety(80), 0, 10,10)
-  --
+  for i in ipairs(messages) do
+    love.graphics.print(messages[i].message, 1,(i-1)*50+1)
+  end
+
+  local x,y = love.mouse.getPosition()
+  if dragging.s then
+    translate(dragging.x-x, dragging.y-y)
+    dragging.x = x
+    dragging.y = y
+  end
+  x,y = offsetx(x), offsety(y)
 
   for by in pairs(Map.data.background) do
     for bx in pairs(Map.data.background[by]) do
@@ -224,12 +256,11 @@ function love.draw()
 
   love.graphics.rectangle("fill", 0, 1820, 100,100)
   love.graphics.draw(tileset, quad[selected], 10, 1830, 0, 10,10)
-  local x,y = love.mouse.getPosition()
-  x,y = offsetx(x), offsety(y)
+
   local mx,my = math.floor(x/10), math.floor(y/10)
   -- multiple selection rectangle: love.graphics.rectangle("line", l,w, mousex, mousey)
   love.graphics.setLineWidth(3)
-  love.graphics.rectangle("line", coffsetx(80*(math.floor(x/80))),coffsety(80*(math.floor(y/80))), 80,80)
+  if not dragging.s then love.graphics.rectangle("line", coffsetx(80*(math.floor(x/80))),coffsety(80*(math.floor(y/80))), 80,80) end
   love.graphics.print("("..tostring(mx)..", "..tostring(my)..")", 110, 1830)
   love.graphics.print("background:  [1]  [2]  [3]  [4]    terrain:  [q]  [w]  [e]  [r]    entities:  [a]  [s]  [d]  [f]", 110, 1875)
 end
