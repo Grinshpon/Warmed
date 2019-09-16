@@ -12,7 +12,7 @@ local file
 local tileset
 local quad
 local selected = 1
-
+local placeCase
 
 local Camera
 function offsetx(x)
@@ -49,10 +49,10 @@ function show(self)
   res = res..tab().."data = {\n"
   function showData(layer, name)
     res = res..tab(2)..name.." = {\n"
-    for i in ipairs(layer) do
-      res = res..tab(3).."{ "
-        for j in ipairs(layer[i]) do
-          res = res..tostring(layer[i][j])..", "
+    for i in pairs(layer) do
+      res = res..tab(3).."["..tostring(i).."] = { "
+        for j in pairs(layer[i]) do
+          res = res.."["..tostring(j).."] = "..tostring(layer[i][j])..", "
         end
       res = res.."},\n"
     end
@@ -120,7 +120,7 @@ function love.load(arg)
 
   if arg[1] then
     if file_exists("maps/"..arg[1]..".lua") then
-      Map = require(arg[1])
+      Map = require("maps/"..arg[1])
     else
       Map = {
         name = arg[1],
@@ -157,19 +157,53 @@ function love.load(arg)
     love.graphics.newQuad(0,8,8,8, tileset:getDimensions()),
     love.graphics.newQuad(8,8,8,8, tileset:getDimensions())
   }
+
+  placeCase = {
+    [1] = Map.data.background,
+    [2] = Map.data.background,
+    [3] = Map.data.background,
+    [4] = Map.data.background,
+    ['q'] = Map.data.terrain,
+    ['w'] = Map.data.terrain,
+    ['e'] = Map.data.terrain,
+    ['r'] = Map.data.terrain,
+    ['a'] = Map.data.entities,
+    ['s'] = Map.data.entities,
+    ['d'] = Map.data.entities,
+    ['f'] = Map.data.entities,
+    default = {},
+  }
+
 end
 
 local transCase = {
-  ['up']    = function() translate(0,-1) end,
-  ['down']  = function() translate(0,1)  end,
-  ['left']  = function() translate(-1,0) end,
-  ['right'] = function() translate(1,0)  end,
+  ['up']    = function() translate(0,-5) end,
+  ['down']  = function() translate(0,5)  end,
+  ['left']  = function() translate(-5,0) end,
+  ['right'] = function() translate(5,0)  end,
   default = function() end
 }
 
 function love.update(dt)
   for k,v in pairs(keysDown) do
     if v then util.match({k}, transCase)() end
+  end
+end
+
+
+function love.mousepressed(x,y,button, _istouch)
+  if button == 1 and x >= 0 and y >= 0 then
+    x = math.floor(offsetx(x)/80)+1
+    y = math.floor(offsety(y)/80)+1
+    print(x,y)
+    local layer = util.match({selected}, placeCase)
+    if not layer[y] then
+      layer[y] = {}
+      for i=1,x do
+        layer[y][i] = 0
+      end
+    end
+    layer[y][x] = selected
   end
 end
 
