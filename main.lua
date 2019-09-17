@@ -1,11 +1,12 @@
 love.window.setTitle "Warcry Map Editor";
 love.graphics.setDefaultFilter("nearest","nearest");
 
---temporary
 love.window.setMode(1920,1920,{resizable=false});
 love.graphics.setNewFont(--[["Font/uni05_53.ttf",--]]25);
 
 util = require "util"
+
+-------------------------- TODO: width and height of maps ------------------
 
 local file
 
@@ -91,6 +92,26 @@ local selectCase = {
   ['down']  = function() if not keysDown.down  then keysDown.down = true;  end end,
   ['left']  = function() if not keysDown.left  then keysDown.left = true;  end end,
   ['right'] = function() if not keysDown.right then keysDown.right = true; end end,
+  [',']     = function()
+    if math.abs(selected) - math.floor(math.abs(selected)) > 0.0 then
+      if selected > 0 then
+        selected = selected - 0.1
+      else
+        selected = selected + 0.1
+      end
+    end
+    print(selected)
+  end,
+  ['.']     = function()
+    if math.abs(selected) - math.floor(math.abs(selected)) < 0.3 then
+      if selected > 0 then
+        selected = selected + 0.1
+      else
+        selected = selected - 0.1
+      end
+    end
+    print(selected)
+  end,
   default = function() end
 }
 
@@ -103,6 +124,7 @@ local releaseCase = {
 }
 
 function love.keypressed(key)
+  --print(key)
   util.match({key}, selectCase)()
 end
 
@@ -210,7 +232,7 @@ function love.mousepressed(mx,my,button)
   if button == 1 and x >= 0 and y >= 0 then
     x = math.floor(x)+1
     y = math.floor(y)+1
-    local layer = util.match({selected}, placeCase)
+    local layer = util.match({math.floor(math.abs(selected))}, placeCase)
     if not layer[y] then
       layer[y] = {}
       for i=1,x do
@@ -248,14 +270,37 @@ function love.draw()
 
   for by in pairs(Map.data.background) do
     for bx in pairs(Map.data.background[by]) do
-      if Map.data.background[by][bx] ~= 0 then
-        love.graphics.draw(tileset, quad[Map.data.background[by][bx]], coffsetx((bx-1)*80), coffsety((by-1)*80), 0, 10,10)
+      local ltile = Map.data.background[by][bx]
+      local i = math.floor(math.abs(ltile))
+      local r = math.floor(10*(math.abs(ltile)-i))
+      local ox,oy = 0,0
+      if r == 1 then
+        oy = 8
+      elseif r == 2 then
+        oy = 8; ox = 8
+      elseif r == 3 then
+        ox = 8
+      end
+      if i ~= 0 then
+        love.graphics.draw(tileset, quad[i], coffsetx((bx-1)*80), coffsety((by-1)*80), r*0.5*math.pi, 10,10, ox,oy)
       end
     end
   end
 
+  local iselected = math.floor(math.abs(selected))
+  local r = math.floor(10*(math.abs(selected)-iselected))
+
   love.graphics.rectangle("fill", 0, 1820, 100,100)
-  love.graphics.draw(tileset, quad[selected], 10, 1830, 0, 10,10)
+
+  local ox,oy = 0,0
+  if r == 1 then
+    oy = 8
+  elseif r == 2 then
+    oy = 8; ox = 8
+  elseif r == 3 then
+    ox = 8
+  end
+  love.graphics.draw(tileset, quad[iselected], 10, 1830, r*0.5*math.pi, 10,10, ox,oy)
 
   local mx,my = math.floor(x/10), math.floor(y/10)
   -- multiple selection rectangle: love.graphics.rectangle("line", l,w, mousex, mousey)
@@ -266,6 +311,7 @@ function love.draw()
 end
 
 function love.quit()
+  -- TODO: width and height of maps
   io.output(file)
   io.write(show(Map))
   io.close(file)
