@@ -9,6 +9,20 @@ function Object:new (o)
 end
 util.Object = Object
 
+function util.new(t)
+  return function(data)
+    for k,v in pairs(t) do
+      if not ((type(v) == "table" and data[k].__typeof == v) or v == type(data[k])) then
+        --print(type(v), data[k].__typeof ~= v, v ~= type(data[k]))
+        error "mismatched types in declaration"
+      end
+    end
+    data.__typeof = t
+    setmetatable(data,t)
+    return data
+  end
+end
+
 function util.match(pattern,switch)
 	local case = switch;
 	local default = switch.default or error "no default case";
