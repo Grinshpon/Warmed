@@ -100,7 +100,7 @@ local selectCase = {
         selected = selected + 0.1
       end
     end
-    print(selected)
+  --print(selected)
   end,
   ['.']     = function()
     if math.abs(selected) - math.floor(math.abs(selected)) < 0.3 then
@@ -110,8 +110,9 @@ local selectCase = {
         selected = selected - 0.1
       end
     end
-    print(selected)
+  --print(selected)
   end,
+  --['/']     = function() selected = selected*(-1) end, -- flipping will come later, too lazy to implemnt rn
   default = function() end
 }
 
@@ -255,6 +256,14 @@ function love.mousereleased(x,y, button)
   end
 end
 
+
+function signum(n)
+  if n > 0 then return 1
+  elseif n < 0 then return -1
+  else return 0
+  end
+end
+
 function love.draw()
   for i in ipairs(messages) do
     love.graphics.print(messages[i].message, 1,(i-1)*50+1)
@@ -282,7 +291,7 @@ function love.draw()
         ox = 8
       end
       if i ~= 0 then
-        love.graphics.draw(tileset, quad[i], coffsetx((bx-1)*80), coffsety((by-1)*80), r*0.5*math.pi, 10,10, ox,oy)
+        love.graphics.draw(tileset, quad[i], coffsetx((bx-1)*80), coffsety((by-1)*80), r*0.5*math.pi, 10*signum(ltile),10, ox,oy)
       end
     end
   end
@@ -300,7 +309,7 @@ function love.draw()
   elseif r == 3 then
     ox = 8
   end
-  love.graphics.draw(tileset, quad[iselected], 10, 1830, r*0.5*math.pi, 10,10, ox,oy)
+  love.graphics.draw(tileset, quad[iselected], 10, 1830, r*0.5*math.pi, 10*signum(selected),10, ox,oy)
 
   local mx,my = math.floor(x/10), math.floor(y/10)
   -- multiple selection rectangle: love.graphics.rectangle("line", l,w, mousex, mousey)
